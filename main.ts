@@ -1,16 +1,10 @@
-// A working gta6-cover-art-01 entry (Node 22, standard library only): the app is this directory's app/ folder, plain
-// static files a desktop browser loads offline (app/index.html and its ES modules, no library and no network
-// request), and the program hands it in. It copies app/ and screenshots/ from beside this file to /output and writes
-// /output/dossier.json, the summary the judge reads, with the vendored make.fun library. Only the plumbing, not the
-// cover art the bounty asks for: Cover Snap, a plain one-photo square cover with a sunset tint and a bold caption,
-// exported as a 1080 x 1080 PNG. Its two sample photos (app/samples/) were made for make.fun with an image model and
-// are free to use. Build your own GTA-style cover maker in its place, put your 3 or 4 PNG or JPEG screenshots in
-// screenshots/ (the first by name is the cover) and run it.
-//
-// Serve it locally with `node serve.ts`, then open http://localhost:8080.
-// Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
-//   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
+// Nightdrive Cover Studio — deterministic Node 22 hand-in, no install or network needed.
+// The app/ directory is a standalone static site. The browser loads local fonts and sample photos;
+// user photos never leave the browser. Screenshots are actual captures of its canvas and editor.
+// Run with MAKEFUN_OUTPUT_DIR set to a fresh directory to inspect the resulting dossier.
 
+// Nightdrive's offline release: copy the tested static editor and its genuine browser captures into the hand-in.
+// Keep this entrypoint deterministic: no timestamps, network calls, or generated content enter the dossier.
 import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';

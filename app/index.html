@@ -1,23 +1,25 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cover Snap</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark"><title>Nightdrive — Cover Studio</title>
 <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-<main class="app">
-  <section class="controls">
-    <h1>Cover Snap</h1>
-    <p>A photo and a caption, made into a square cover.</p>
-    <label>Photo <input id="photo" type="file" accept="image/*"></label>
-    <label>Caption <input id="caption" type="text" maxlength="40" value="Sunset Heist"></label>
-    <button id="export" type="button">Export PNG 1080 x 1080</button>
-    <p id="status" role="status"></p>
-  </section>
-  <canvas id="cover" width="1080" height="1080" aria-label="The cover"></canvas>
+<header class="topbar"><div class="brand"><span class="brand-mark">N<span>✳</span>D</span><div><strong>NIGHTDRIVE</strong><small>COVER STUDIO / 006</small></div></div><div class="top-note">MAKE THE NIGHT YOURS. <span>✳</span> OFFLINE BY DESIGN</div><button id="topExport" class="top-export" type="button">EXPORT COVER <span>↗</span></button></header>
+<main class="workspace">
+<aside class="sidebar">
+<div class="intro"><div class="eyebrow">01 / THE EDIT</div><h1>Make it<br><em>legendary.</em></h1><p>Turn your own photos into a cinematic city story. No accounts, no uploads, just your image and a little attitude.</p></div>
+<div class="field"><div class="label-line"><label for="caption">COVER TITLE</label><span>01 / 05</span></div><input id="caption" type="text" maxlength="38" value="NIGHT DRIVE" spellcheck="false"><small>Try a short, punchy title. Your story, your words.</small></div>
+<div class="field"><div class="label-line"><label for="photos">YOUR PHOTOS</label><span>02 / 05</span></div><label class="drop" id="drop" for="photos"><span class="drop-icon">↥</span><strong>Drop photos here or browse</strong><span>JPG, PNG, WEBP · stays on this device</span></label><input id="photos" type="file" accept="image/*" multiple hidden><div id="photoList" class="photo-list"></div><button id="demo" class="subtle" type="button">↗ Load sample photos</button></div>
+<div class="field"><div class="label-line"><label for="layout">COMPOSITION</label><span>03 / 05</span></div><div id="layout" class="segmented" role="group" aria-label="Composition"></div></div>
+<div class="field"><div class="label-line"><label for="palette">COLOR STORY</label><span>04 / 05</span></div><div id="palette" class="swatches" role="group" aria-label="Palette"></div></div>
+<div class="field"><div class="label-line"><label for="format">CANVAS FORMAT</label><span>05 / 05</span></div><select id="format"></select></div>
+<div class="field crop-field"><div class="label-line"><label for="panelPhoto">PANEL <span id="panelNumber">01</span> / FRAME</label><span>CLICK THE PREVIEW</span></div><select id="panelPhoto" aria-label="Photo in selected panel"></select><div class="sliders"><label>ZOOM <input id="zoom" type="range" min="1" max="3" step="0.01" value="1"></label><label>HORIZONTAL <input id="panX" type="range" min="0" max="1" step="0.01" value="0.5"></label><label>VERTICAL <input id="panY" type="range" min="0" max="1" step="0.01" value="0.5"></label></div><small>Drag on a panel to reposition its photo.</small></div>
+</aside>
+<section class="preview-area"><div class="preview-header"><div><div class="eyebrow">02 / THE COVER</div><h2>Live preview <span>✳</span></h2></div><div id="previewMeta">1920 × 1080 / LANDSCAPE</div></div><div class="stage"><div class="canvas-wrap"><canvas id="cover" width="1920" height="1080" aria-label="Live cover art preview; click a panel to edit its photo"></canvas></div></div><div class="preview-footer"><span><i class="live-dot"></i> LIVE CANVAS <b>·</b> CLICK A PANEL TO EDIT</span><span id="status" role="status">READY TO CREATE</span></div></section>
+<aside class="right-rail"><div class="rail-index">N/D<br>006</div><div class="rail-line"></div><span>YOUR CITY.<br>YOUR STORY.<br>YOUR COVER.</span><div class="rail-line"></div><span class="rail-bottom">EST. AFTER DARK<br>✳ 2026</span></aside>
 </main>
+<footer class="bottom-bar"><span>01 — ADD PHOTOS</span><span>02 — MAKE IT YOURS</span><span>03 — TAKE IT WITH YOU</span><button id="export" type="button">DOWNLOAD PNG <span>↗</span></button></footer>
 <script type="module" src="./src/main.js"></script>
-</body>
-</html>
+</body></html>
