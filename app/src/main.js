@@ -4,8 +4,8 @@ const $ = (id) => document.getElementById(id);
 const canvas = $('cover');
 const state = {
   caption: 'NIGHT DRIVE', palette: 'Afterglow', layout: 'Editorial', format: Object.keys(sizes)[0],
-  images: [], names: [], assignments: [0,1,0,1,0],
-  crops: Array.from({length:5},()=>({x:.5,y:.12,zoom:1})), selected: 0
+  images: [], names: [], assignments: [-1,-1,-1,-1,-1,-1],
+  crops: Array.from({length:6},()=>({x:.5,y:.5,zoom:1})), selected: 0
 };
 const repaint = () => drawCover(canvas,state);
 function loadImage(url) {
@@ -16,52 +16,67 @@ function loadImage(url) {
 function refreshPhotos() {
   $('photoList').replaceChildren();
   state.names.forEach((name,i)=>{
-    const button=document.createElement('button'); button.type='button'; button.className='photo-chip';
-    const thumb=document.createElement('img'); thumb.src=state.images[i].src; thumb.alt='';
-    const text=document.createElement('span'); text.textContent=`${String(i+1).padStart(2,'0')}  ${name}`;
-    button.append(thumb,text); button.title=`Use ${name} in selected panel`;
-    button.onclick=()=>{ state.assignments[state.selected]=i; syncPanel(); repaint(); };
+    const button=document.createElement('button');button.type='button';button.className='photo-chip'+(state.assignments[state.selected]===i?' selected':'');
+    const thumb=document.createElement('img');thumb.src=state.images[i].src;thumb.alt='';
+    const text=document.createElement('span');text.textContent=`${String(i+1).padStart(2,'0')}  ${name}`;
+    button.append(thumb,text);button.title=`Use ${name} in frame ${state.selected+1}`;
+    button.onclick=()=>{state.assignments[state.selected]=i;syncPanel();repaint();};
     $('photoList').append(button);
   });
-  const select=$('panelPhoto'); select.replaceChildren();
-  const drawn=document.createElement('option'); drawn.value='-1'; drawn.textContent='Original illustrated skyline'; select.append(drawn);
+  const select=$('panelPhoto');select.replaceChildren();
+  const drawn=document.createElement('option');drawn.value='-1';drawn.textContent='Original illustrated sunset';select.append(drawn);
   state.names.forEach((name,i)=>{
-    const option=document.createElement('option'); option.value=String(i); option.textContent=`Photo ${i+1} — ${name}`; select.append(option);
+    const option=document.createElement('option');option.value=String(i);option.textContent=`Photo ${i+1} — ${name}`;select.append(option);
   });
-  if(!state.names.length) { const option=document.createElement('option'); option.textContent='Add photos to assign'; select.append(option); }
   syncPanel();
 }
 async function addPhotos(files) {
-  const valid=Array.from(files).filter(f=>f.type.startsWith('image/'));
+  const valid=Array.from(files).filter(f=>['image/jpeg','image/png','image/webp','image/avif'].includes(f.type));
+  if(files.length && !valid.length) {$('status').textContent='USE A JPG, PNG, WEBP OR AVIF PHOTO';return;}
+  const first=state.images.length;
   for(const file of valid) {
     const url=URL.createObjectURL(file);
-    try { const img=await loadImage(url); state.images.push(img); state.names.push(file.name); }
-    catch { URL.revokeObjectURL(url); $('status').textContent=`Could not read ${file.name}`; }
+    try {const img=await loadImage(url);state.images.push(img);state.names.push(file.name);}
+    catch {URL.revokeObjectURL(url);$('status').textContent=`Could not read ${file.name}`;}
   }
-  if(valid.length && state.images.length) {
-    state.assignments=[0,Math.min(1,state.images.length-1),0,Math.min(1,state.images.length-1),0];
-    $('status').textContent=`${state.images.length} PHOTO${state.images.length===1?'':'S'} LOADED · READY`;
+  const added=state.images.length-first;
+  if(added) {
+    // A single picture immediately makes a complete poster; several build a sequence.
+    for(let i=0;i<6;i++) state.assignments[i]=first+(added===1?0:i%added);
+    state.crops=Array.from({length:6},()=>({x:.5,y:.5,zoom:1}));
+    $('status').textContent=`${added} NEW PHOTO${added===1?'':'S'} · SIX FRAMES READY`;
   }
-  refreshPhotos(); repaint();
+  $('photos').value='';refreshPhotos();repaint();
 }
 async function demo() {
   try {
-    const urls=['./samples/boulevard.jpg','./samples/pier.jpg'];
-    const images=await Promise.all(urls.map(loadImage));
-    state.images=images; state.names=['Boulevard at dusk','Pier on the coast'];
-    state.assignments=[0,1,0,-1,0]; refreshPhotos(); repaint();
-    $('status').textContent='SAMPLE PHOTOS LOADED · REPLACE WITH YOUR OWN';
-  } catch { $('status').textContent='Could not load local samples'; }
+    const urls=['./samples/boulevard.jpg','./samples/night-street.jpg','./samples/skyline.jpg','./samples/neon.jpg','./samples/palms.jpg'];
+    state.images=await Promise.all(urls.map(loadImage));
+    state.names=['Boulevard portrait','City in motion','Miami skyline','After-hours street','Sunset palms'];
+    state.assignments=[0,1,2,3,4,-1];
+    // Hand-tuned focal points preserve the model portrait's face and the taxi below it.
+    state.crops=[{x:.47,y:.2,zoom:1},{x:.5,y:.67,zoom:1},{x:.5,y:.48,zoom:1},{x:.5,y:.68,zoom:1},{x:.5,y:.47,zoom:1},{x:.5,y:.5,zoom:1}];
+    state.selected=0;refreshPhotos();repaint();
+    $('status').textContent='FIVE LOCAL PHOTOS + ORIGINAL ILLUSTRATION · READY';
+  } catch {$('status').textContent='Could not load local samples';}
 }
 function syncPanel() {
   $('panelNumber').textContent=String(state.selected+1).padStart(2,'0');
-  $('panelPhoto').value=String(state.assignments[state.selected] ?? 0);
+  $('panelPhoto').value=String(state.assignments[state.selected] ?? -1);
+  const tabs=$('frameTabs');tabs.replaceChildren();
+  for(let i=0;i<6;i++) {
+    const button=document.createElement('button');button.type='button';button.textContent=String(i+1).padStart(2,'0');
+    button.setAttribute('aria-label',`Edit frame ${i+1}`);button.setAttribute('aria-pressed',String(i===state.selected));
+    button.onclick=()=>{state.selected=i;syncPanel();repaint();};tabs.append(button);
+  }
+  [...$('photoList').children].forEach((chip,i)=>chip.classList.toggle('selected',state.assignments[state.selected]===i));
   const crop=state.crops[state.selected];
   $('zoom').value=crop.zoom; $('panX').value=crop.x; $('panY').value=crop.y;
 }
 function setFormat(name) {
   state.format=name; [canvas.width,canvas.height]=sizes[name];
   $('previewMeta').textContent=name.toUpperCase().replace(' · ',' / ');
+  $('status').textContent=`${name.split(' · ')[0].toUpperCase()} FORMAT · READY`;
   repaint();
 }
 function setChoice(group, values, selected, onClick) {
@@ -85,7 +100,8 @@ const drop=$('drop');
 for(const type of ['dragenter','dragover']) drop.addEventListener(type,e=>{e.preventDefault();drop.classList.add('hover');});
 for(const type of ['dragleave','drop']) drop.addEventListener(type,e=>{e.preventDefault();drop.classList.remove('hover');});
 drop.addEventListener('drop',e=>addPhotos(e.dataTransfer.files));
-$('panelPhoto').addEventListener('change',e=>{state.assignments[state.selected]=Number(e.target.value); repaint();});
+$('panelPhoto').addEventListener('change',e=>{state.assignments[state.selected]=Number(e.target.value);syncPanel();repaint();});
+$('resetCrop').addEventListener('click',()=>{state.crops[state.selected]={x:.5,y:.5,zoom:1};syncPanel();repaint();});
 for(const [id,key] of [['zoom','zoom'],['panX','x'],['panY','y']]) $(''+id).addEventListener('input',e=>{
   state.crops[state.selected][key]=Number(e.target.value); repaint();
 });

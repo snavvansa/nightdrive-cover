@@ -42,98 +42,109 @@ function skyline(ctx,w,h,p) {
   palm(ctx,w*.18,h*.95,Math.min(w,h)/330,p.ink);
   palm(ctx,w*.92,h*1.2,Math.min(w,h)/440,p.ink);
 }
+// Six frames always remain editable, including the hand-drawn frame. All coordinates
+// are poster-space, so the same composition is exported at full device resolution.
 function geometry(W,H,layout) {
-  const y=65, bottom=H-146, live=bottom-y, gap=12;
-  if(layout==='Contact Sheet') {
-    const top=live*.62;
-    return [[32,y,710,top-gap],[754,y,414,top-gap],[32,y+top,275,live-top],[319,y+top,423,live-top],[754,y+top,414,live-top]];
+  const m=27, gap=9, y=70, end=H-(H<800?188:H<1400?245:268), live=end-y;
+  const inner=W-2*m;
+  if (H>1400) {
+    const top=live*.52, lower=live-top-gap, half=(inner-gap)/2;
+    if (layout==='Contact Sheet') return [[m,y,half,top],[m+half+gap,y,half,top],[m,y+top+gap,half/2-gap/2,lower],[m+half/2+gap/2,y+top+gap,half/2-gap/2,lower],[m+half+gap,y+top+gap,half/2-gap/2,lower],[m+half*1.5+gap*1.5,y+top+gap,half/2-gap/2,lower]];
+    return [[m,y,half,top],[m+half+gap,y,half,top],[m,y+top+gap,(inner-3*gap)/4,lower],[m+(inner+gap)/4,y+top+gap,(inner-3*gap)/4,lower],[m+(inner+gap)/2,y+top+gap,(inner-3*gap)/4,lower],[m+3*(inner+gap)/4,y+top+gap,(inner-3*gap)/4,lower]];
   }
-  if(layout==='Split Screen') return [[32,y,742,live],[786,y,382,live*.52-gap],[786,y+live*.52,382,live*.48]];
-  if(H>W*1.12) {
-    const hero=live*.59;
-    return [[32,y,1136,hero-gap],[32,y+hero,365,live-hero],[409,y+hero,422,live-hero],[843,y+hero,325,live-hero]];
-  }
-  if(H<W*.75) return [[32,y,703,live],[747,y,421,live*.52-gap],[747,y+live*.52,205,live*.48],[964,y+live*.52,204,live*.48]];
-  return [[32,y,720,live],[764,y,404,live*.52-gap],[764,y+live*.52,195,live*.48],[971,y+live*.52,197,live*.48]];
+  const hero=layout==='Contact Sheet'?inner*.39:layout==='Split Screen'?inner*.48:inner*.355;
+  const right=inner-hero-gap, row=live*(layout==='Split Screen'?.55:.59), split=(right-gap)/2, third=(right-2*gap)/3;
+  return [[m,y,hero,live],[m+hero+gap,y,split,row-gap/2],[m+hero+gap+split+gap,y,split,row-gap/2],
+    [m+hero+gap,y+row+gap/2,third,live-row-gap/2],[m+hero+gap+third+gap,y+row+gap/2,third,live-row-gap/2],[m+hero+gap+2*(third+gap),y+row+gap/2,third,live-row-gap/2]];
 }
-function photoInPanel(ctx, img, rect, crop, p, index) {
+function illustratedFrame(ctx,w,h,p) {
+  const g=ctx.createLinearGradient(0,0,0,h); g.addColorStop(0,p.violet); g.addColorStop(.55,p.pink); g.addColorStop(1,p.coral);
+  box(ctx,0,0,w,h,g);
+  const cx=w*.69,cy=h*.53,r=Math.min(w,h)*.29;
+  ctx.fillStyle=p.cream;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+  ctx.save();ctx.beginPath();ctx.rect(0,cy,w,h-cy);ctx.clip();
+  for(let i=0;i<12;i++) box(ctx,0,cy+i*i*2.1,w,2+i*.55,p.pink);
+  ctx.restore();
+  const horizon=h*.78;
+  for(let i=0;i<16;i++) { const x=i*w/15, bh=(i*47+13)%Math.max(32,h*.23);box(ctx,x,horizon-bh,w/19+2,bh+h*.22,p.ink); }
+  palm(ctx,w*.19,h*1.12,Math.min(w,h)/240,p.ink);
+  palm(ctx,w*.93,h*1.19,Math.min(w,h)/320,p.ink);
+  box(ctx,0,h*.93,w,h*.07,p.ink);
+}
+function photoInPanel(ctx,img,rect,crop,p,index) {
   const [x,y,w,h]=rect;
-  ctx.save(); ctx.beginPath(); ctx.rect(x,y,w,h); ctx.clip();
-  if(img) {
-    const iw=img.naturalWidth, ih=img.naturalHeight, z=crop.zoom;
-    const sw=Math.min(iw, iw/z), sh=Math.min(ih, ih/z);
-    const frameRatio=w/h, sourceRatio=sw/sh;
-    let cw=sw, ch=sh;
-    if(sourceRatio>frameRatio) cw=sh*frameRatio; else ch=sw/frameRatio;
-    const sx=Math.max(0,Math.min(iw-cw, (iw-cw)*crop.x));
-    const sy=Math.max(0,Math.min(ih-ch, (ih-ch)*crop.y));
+  ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
+  if (img) {
+    const iw=img.naturalWidth,ih=img.naturalHeight,z=crop.zoom;
+    const factor=Math.max(w/iw,h/ih)*z,cw=w/factor,ch=h/factor;
+    const sx=Math.max(0,Math.min(iw-cw,(iw-cw)*crop.x));
+    const sy=Math.max(0,Math.min(ih-ch,(ih-ch)*crop.y));
     ctx.drawImage(img,sx,sy,cw,ch,x,y,w,h);
-    ctx.globalCompositeOperation='multiply'; box(ctx,x,y,w,h,index%2 ? p.pink+'72':p.coral+'57');
+    ctx.globalCompositeOperation='multiply';box(ctx,x,y,w,h,(index===0?p.coral:index===2?p.coral:index%2?p.pink:p.violet)+(index===2?'62':'38'));
     ctx.globalCompositeOperation='source-over';
-    const wash=ctx.createLinearGradient(x,y,x,y+h); wash.addColorStop(0,p.cyan+'0c'); wash.addColorStop(.62,p.pink+'0c'); wash.addColorStop(1,p.ink+'c4');
-    box(ctx,x,y,w,h,wash);
-  } else {
-    ctx.translate(x,y); skyline(ctx,w,h,p); ctx.translate(-x,-y);
-  }
-  // Cut-paper diagonal and halftone treatment; no borrowed texture assets.
-  polygon(ctx,[[x+w*.82,y],[x+w,y],[x+w,y+h*.23]],p.cyan+'52');
-  for(let col=0;col<7;col++) for(let row=0;row<5;row++) {
-    ctx.fillStyle=p.cream+'47'; ctx.beginPath(); ctx.arc(x+w-83+col*11,y+13+row*11,1.3,0,Math.PI*2); ctx.fill();
-  }
+    const glow=ctx.createLinearGradient(x,y,x+w,y+h);glow.addColorStop(0,p.coral+'25');glow.addColorStop(.53,'#00000000');glow.addColorStop(1,p.violet+'54');box(ctx,x,y,w,h,glow);
+    const shade=ctx.createLinearGradient(0,y,0,y+h);shade.addColorStop(0,'#00000000');shade.addColorStop(.72,'#00000000');shade.addColorStop(1,p.ink+'d9');box(ctx,x,y,w,h,shade);
+  } else {ctx.translate(x,y);illustratedFrame(ctx,w,h,p);ctx.translate(-x,-y);}
+  // A small inset registration line gives each frame the feel of a printed plate.
+  ctx.strokeStyle=p.cream+'75';ctx.lineWidth=1;ctx.strokeRect(x+8,y+8,w-16,h-16);
   ctx.restore();
 }
-function panel(ctx, rect, img, crop, p, index) {
+function panel(ctx,rect,img,crop,p,index,selected) {
   const [x,y,w,h]=rect;
-  box(ctx,x-4,y-4,w+8,h+8,p.ink);
+  box(ctx,x-3,y-3,w+6,h+6,index===selected?p.cyan:p.ink);
   photoInPanel(ctx,img,rect,crop,p,index);
-  ctx.strokeStyle=p.cream+'a8'; ctx.lineWidth=1.5; ctx.strokeRect(x+9,y+9,w-18,h-18);
-  const tag=['01 / THE ARRIVAL','02 / AFTER HOURS','03 / COASTLINE','04 / NO RETURN','05 / THE CITY'][index];
-  box(ctx,x+15,y+h-34,Math.min(w-30,tag.length*8+22),24,p.ink+'df');
-  ctx.fillStyle=p.cream; ctx.font='600 13px SpaceGrotesk'; ctx.textAlign='left'; ctx.fillText(tag,x+23,y+h-17);
+  const tags=['THE ARRIVAL','CITY IN MOTION','THE HORIZON','AFTER HOURS','LAST LIGHT','NO TURNING BACK'];
+  const label=`0${index+1}  /  ${tags[index]}`;
+  ctx.font='700 11px SpaceGrotesk';ctx.textAlign='left';
+  const tw=Math.min(w-20,ctx.measureText(label).width+22);
+  box(ctx,x+9,y+h-30,tw,23,p.ink+'e8');ctx.fillStyle=p.cream;ctx.fillText(label,x+19,y+h-14,tw-17);
+  ctx.fillStyle=p.cyan;box(ctx,x+9,y+9,22,3,p.cyan);
 }
-function fit(ctx, text, max, start, min=55) {
-  let size=start; while(size>min) { ctx.font=`${size}px Anton`; if(ctx.measureText(text).width<=max) break; size-=2; }
-  return size;
+function fit(ctx,text,max,start) {
+  let size=start;while(size>32) {ctx.font=`${size}px Anton`;if(ctx.measureText(text).width<=max) break;size-=2;}return size;
 }
-function title(ctx, caption, W, H, p) {
-  const words=(caption.trim() || 'NIGHT DRIVE').toUpperCase().split(/\s+/);
-  const second=words.length>1 ? words.slice(Math.ceil(words.length/2)).join(' ') : words[0];
-  const first=words.length>1 ? words.slice(0,Math.ceil(words.length/2)).join(' ') : 'THE';
-  const y=H-68;
-  box(ctx,0,H-143,W,143,p.ink);
-  polygon(ctx,[[0,H-143],[W,H-143],[W,H-135],[0,H-127]],p.cyan);
-  ctx.save(); ctx.transform(1,0,-.11,1,115,0);
-  ctx.textAlign='left';
-  const a=fit(ctx,first,W*.52,105,48), b=fit(ctx,second,W*.59,123,48);
-  ctx.lineJoin='round'; ctx.lineWidth=13; ctx.strokeStyle=p.pink; ctx.font=`${a}px Anton`; ctx.strokeText(first,45,y+24);
-  ctx.fillStyle=p.cream; ctx.fillText(first,45,y+24);
-  ctx.font=`${b}px Anton`; ctx.lineWidth=10; ctx.strokeStyle=p.ink; ctx.strokeText(second,W*.43,y+25);
-  const metal=ctx.createLinearGradient(0,y-80,0,y+35); metal.addColorStop(0,p.cream); metal.addColorStop(.48,p.cyan); metal.addColorStop(.53,p.cream); metal.addColorStop(1,p.coral);
-  ctx.fillStyle=metal; ctx.fillText(second,W*.43,y+25);
+function headline(ctx,caption,W,H,p) {
+  const tall=H>1400,band=H<800?181:H<1400?238:260,top=H-band;
+  const words=(caption.trim()||'NIGHT DRIVE').toUpperCase().split(/\s+/);
+  const half=Math.ceil(words.length/2),a=words.length===1?'THE':words.slice(0,half).join(' '),b=words.length===1?words[0]:words.slice(half).join(' ');
+  box(ctx,0,top,W,band,p.ink);
+  box(ctx,0,top,W,5,p.cyan);
+  if(H>1400) {
+    ctx.fillStyle=p.coral;ctx.font='700 12px SpaceGrotesk';ctx.textAlign='left';
+    spaced(ctx,'AN ORIGINAL STORY  /  VOLUME 006',36,top+15,2.5);
+    ctx.fillStyle=p.cream;ctx.textAlign='right';ctx.fillText('THE NIGHT BELONGS TO YOU     ✳     2026',W-35,top+15);
+  }
+  ctx.save();ctx.lineJoin='round';ctx.textAlign='left';
+  function word(text,x,y,max,size,shadow) {
+    const fs=fit(ctx,text,max,size);ctx.font=`${fs}px Anton`;
+    ctx.lineWidth=Math.max(4,fs*.09);ctx.strokeStyle=p.ink;ctx.strokeText(text,x,y,max);
+    ctx.shadowColor=shadow;ctx.shadowBlur=24;ctx.shadowOffsetY=6;
+    const g=ctx.createLinearGradient(0,y-fs,0,y+9);g.addColorStop(0,p.cream);g.addColorStop(.34,p.cream);g.addColorStop(.38,p.cyan);g.addColorStop(.54,p.cream);g.addColorStop(1,p.coral);
+    ctx.fillStyle=g;ctx.fillText(text,x,y,max);ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+    ctx.lineWidth=1.3;ctx.strokeStyle=p.cream+'72';ctx.strokeText(text,x,y,max);
+  }
+  if(tall) {word(a,37,H-45,W*.48,210,p.pink);word(b,W*.47,H-45,W*.5,210,p.cyan);}
+  else {word(a,37,top+band-43,W*.48,H<800?158:210,p.pink);word(b,W*.47,top+band-43,W*.5,H<800?158:210,p.cyan);}
   ctx.restore();
-  ctx.font='600 14px SpaceGrotesk'; ctx.fillStyle=p.cyan;
-  spaced(ctx,'AN ORIGINAL STORY IN COLOR',46,H-18,2.1);
-  ctx.textAlign='right'; ctx.fillStyle=p.cream; ctx.fillText('VOL. 06     //     2026',W-41,H-18);
+  box(ctx,33,H-26,W-66,1,p.cream+'6b');
+  ctx.fillStyle=p.cyan;ctx.font='700 10px SpaceGrotesk';ctx.textAlign='left';ctx.fillText('N / D   •   AFTER DARK COLLECTION',37,H-11);
+  ctx.textAlign='right';ctx.fillText('06  —  26     /     KEEP MOVING',W-37,H-11);
 }
 export function drawCover(canvas,state) {
-  const ctx=canvas.getContext('2d',{alpha:false}); const W=1200,H=W*canvas.height/canvas.width,p=palettes[state.palette];
+  const ctx=canvas.getContext('2d',{alpha:false}),W=1200,H=W*canvas.height/canvas.width,p=palettes[state.palette];
   ctx.setTransform(canvas.width/W,0,0,canvas.height/H,0,0);
-  box(ctx,0,0,W,H,p.ink);
-  const bg=ctx.createLinearGradient(0,0,W,H); bg.addColorStop(0,p.violet); bg.addColorStop(.55,p.ink); bg.addColorStop(1,p.pink);
-  box(ctx,0,0,W,H,bg);
-  // Original sunburst escapes the grid at the upper right.
-  ctx.save(); ctx.translate(W*.83,H*.37);
-  for(let i=0;i<24;i++) { const a=i*Math.PI/12; polygon(ctx,[[0,0],[Math.cos(a-.045)*1300,Math.sin(a-.045)*1300],[Math.cos(a+.045)*1300,Math.sin(a+.045)*1300]],p.coral+'28'); }
+  const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,p.violet);bg.addColorStop(.48,p.ink);bg.addColorStop(1,p.pink);box(ctx,0,0,W,H,bg);
+  ctx.save();ctx.translate(W*.79,H*.41);
+  for(let i=0;i<32;i++){const a=i*Math.PI/16;polygon(ctx,[[0,0],[Math.cos(a-.031)*1500,Math.sin(a-.031)*1500],[Math.cos(a+.031)*1500,Math.sin(a+.031)*1500]],p.coral+'32');}
   ctx.restore();
-  ctx.strokeStyle=p.cyan+'88'; ctx.lineWidth=1; for(let i=0;i<7;i++) ctx.strokeRect(14+i*4,14+i*4,W-28-i*8,H-28-i*8);
+  box(ctx,27,19,116,31,p.cyan);ctx.fillStyle=p.ink;ctx.font='700 15px SpaceGrotesk';ctx.textAlign='left';ctx.fillText('N / D  006',39,40);
+  ctx.fillStyle=p.cream;ctx.font='700 12px SpaceGrotesk';ctx.textAlign='right';ctx.fillText('SUNSET EDITION     /     SIX FRAMES • ONE STORY',1173,39);
   const rects=geometry(W,H,state.layout);
-  rects.forEach((r,i)=>panel(ctx,r,state.images[state.assignments[i] ?? 0],state.crops[i],p,i));
-  box(ctx,32,20,126,32,p.cyan); ctx.fillStyle=p.ink; ctx.font='700 16px SpaceGrotesk'; ctx.textAlign='left'; ctx.fillText('N / D     006',45,42);
-  ctx.fillStyle=p.cream; ctx.font='600 14px SpaceGrotesk'; ctx.textAlign='right'; ctx.fillText('SUNSET EDITION    /    A CITY AFTER DARK',1168,42);
-  title(ctx,state.caption,W,H,p);
+  rects.forEach((r,i)=>panel(ctx,r,state.images[state.assignments[i]??-1],state.crops[i],p,i,state.selected));
+  headline(ctx,state.caption,W,H,p);
   return rects;
 }
 export function panelAt(canvas,state,clientX,clientY) {
-  const b=canvas.getBoundingClientRect(), x=(clientX-b.left)/b.width*1200, y=(clientY-b.top)/b.height*1200*canvas.height/canvas.width;
+  const b=canvas.getBoundingClientRect(),x=(clientX-b.left)/b.width*1200,y=(clientY-b.top)/b.height*1200*canvas.height/canvas.width;
   return geometry(1200,1200*canvas.height/canvas.width,state.layout).findIndex(([px,py,w,h])=>x>=px&&x<px+w&&y>=py&&y<py+h);
 }

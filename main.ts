@@ -3,7 +3,8 @@
 // user photos never leave the browser. Screenshots are actual captures of its canvas and editor.
 // Run with MAKEFUN_OUTPUT_DIR set to a fresh directory to inspect the resulting dossier.
 
-// Nightdrive's offline release: copy the tested static editor and its genuine browser captures into the hand-in.
+// Nightdrive six-frame offline release: copy the tested static editor, locally licensed demo assets
+// and genuine browser captures into the hand-in; never contact an image host at runtime.
 // Keep this entrypoint deterministic: no timestamps, network calls, or generated content enter the dossier.
 import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
