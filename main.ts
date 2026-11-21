@@ -6,13 +6,52 @@
 // Nightdrive six-frame offline release: copy the tested static editor, locally licensed demo assets
 // and genuine browser captures into the hand-in; never contact an image host at runtime.
 // Keep this entrypoint deterministic: no timestamps, network calls, or generated content enter the dossier.
-import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-app.ts';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const out = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+
+// Refuse stale or oversized captures before packaging. This is deliberately a
+// header parser, not an image conversion: the repository's browser exports are
+// copied unchanged, and the dossier library validates their full image bytes.
+function jpegDimensions(bytes: Uint8Array): [number, number] {
+  const read16 = (at: number) => bytes[at]! * 256 + bytes[at+1]!;
+  if (read16(0) !== 0xffd8) throw new Error('Screenshot is not a JPEG');
+  let offset = 2;
+  while (offset + 9 < bytes.length) {
+    if (bytes[offset] !== 0xff) throw new Error('Malformed JPEG marker');
+    const marker = bytes[offset + 1];
+    if (marker === 0xd9 || marker === 0xda) break;
+    const length = read16(offset + 2);
+    if (length < 2 || offset + length + 2 > bytes.length) break;
+    if ([0xc0,0xc1,0xc2,0xc3].includes(marker)) {
+      return [read16(offset + 7), read16(offset + 5)];
+    }
+    offset += length + 2;
+  }
+  throw new Error('Screenshot has no JPEG frame header');
+}
+function checkCaptures(dir: string) {
+  const names = readdirSync(dir).sort();
+  if (names.length !== 4 || names[0] !== '1-cover.jpg') {
+    throw new Error('Expected four current cover/editor captures');
+  }
+  for (const name of names) {
+    const path = join(dir, name);
+    if (!/^([1-4])-[a-z]+\.jpg$/.test(name) || !statSync(path).isFile()) {
+      throw new Error(`Unexpected screenshot: ${name}`);
+    }
+    const bytes = readFileSync(path);
+    const [width, height] = jpegDimensions(bytes);
+    if (bytes.length > 262144 || Math.max(width,height) > 1280 || Math.min(width,height) < 480) {
+      throw new Error(`Screenshot outside gate limits: ${name}`);
+    }
+  }
+}
+checkCaptures(join(here, 'screenshots'));
 
 mkdirSync(out, { recursive: true });
 cpSync(join(here, 'app'), join(out, 'app'), { recursive: true });

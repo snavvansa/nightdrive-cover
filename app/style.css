@@ -13,3 +13,15 @@
 .bottom-bar{height:68px;border-top:1px solid #303442;background:#171b25;display:flex;align-items:center;gap:35px;padding:0 31px;color:#808894;font-size:10px;letter-spacing:.14em}.bottom-bar>span:first-child{color:#f4eee6}.bottom-bar button{margin-left:auto;border:none;background:#7eece7;color:#10171e;font-size:12px;font-weight:700;letter-spacing:.09em;padding:16px 23px}.bottom-bar button span{font-size:20px;margin-left:28px}
 @media(max-width:1000px){.workspace{grid-template-columns:280px minmax(0,1fr)}.right-rail,.top-note{display:none}.sidebar{padding:24px 17px}.preview-area{padding:25px 19px}.bottom-bar{gap:12px}.bottom-bar>span{display:none}}@media(max-width:720px){.workspace{display:flex;flex-direction:column}.sidebar{max-height:none;order:2}.preview-area{order:1;min-height:440px}.stage{min-height:320px}canvas{max-height:60vh}.bottom-bar{position:sticky;bottom:0}.topbar{height:66px;padding:0 14px}.brand{min-width:0}.brand strong{font-size:12px}.brand small{font-size:8px}.top-export{padding:8px;font-size:9px;margin-left:auto}.top-export span{margin-left:5px}.preview-header #previewMeta{font-size:8px}.preview-header h2{font-size:25px}}
 .frame-tabs{display:flex;gap:5px;margin:0 0 11px}.frame-tabs button{flex:1;border:1px solid #535664;background:#292e3b;color:#c8cbd0;padding:8px 0;font:15px Anton}.frame-tabs button[aria-pressed="true"]{background:#80e9e5;color:#161a25;border-color:#80e9e5}.photo-chip:focus-visible{border-color:#80e9e5}.photo-chip.selected{border-color:#80e9e5;background:#384450}.crop-field .subtle{padding:7px 0 9px}
+/* Storyboard controls stay near the source bin; the print lab is scoped to a frame. */
+.story-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px}
+.story-actions button{border:1px solid #58606d;background:#262e39;color:#e6e7df;padding:9px 3px;font-size:10px;letter-spacing:.06em;transition:background .16s,border-color .16s}
+.story-actions button:hover{background:#394755;border-color:#80e9e5}
+.print-field{padding-bottom:27px}
+.print-field .label-line span{color:#fc765e}
+.print-field .sliders{margin-top:17px}
+.print-field .sliders label{font-size:10px}
+.print-field .sliders output{font:14px Anton;color:#7ee9e6}
+.print-field .sliders input{width:100%;margin:0 0 8px;accent-color:#7ee9e6}
+.print-field small{line-height:1.55}
+@media(max-width:720px){.print-field{padding-bottom:16px}.story-actions button{padding:11px 4px}}

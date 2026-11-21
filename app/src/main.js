@@ -5,7 +5,9 @@ const canvas = $('cover');
 const state = {
   caption: 'NIGHT DRIVE', palette: 'Afterglow', layout: 'Editorial', format: Object.keys(sizes)[0],
   images: [], names: [], assignments: [-1,-1,-1,-1,-1,-1],
-  crops: Array.from({length:6},()=>({x:.5,y:.5,zoom:1})), selected: 0
+  crops: Array.from({length:6},()=>({x:.5,y:.5,zoom:1})),
+  treatments: ['Afterglow','Midnight','Chromatic','Afterglow','Chromatic','Clean'],
+  gradeStrength: .65, selected: 0
 };
 const repaint = () => drawCover(canvas,state);
 function loadImage(url) {
@@ -50,14 +52,14 @@ async function addPhotos(files) {
 }
 async function demo() {
   try {
-    const urls=['./samples/boulevard.jpg','./samples/night-street.jpg','./samples/skyline.jpg','./samples/neon.jpg','./samples/palms.jpg'];
+    const urls=['./samples/boulevard.jpg','./samples/night-street.jpg','./samples/skyline.jpg','./samples/neon.jpg','./samples/palms.jpg','./samples/night-palms.jpg'];
     state.images=await Promise.all(urls.map(loadImage));
-    state.names=['Boulevard portrait','City in motion','Miami skyline','After-hours street','Sunset palms'];
-    state.assignments=[0,1,2,3,4,-1];
-    // Hand-tuned focal points preserve the model portrait's face and the taxi below it.
-    state.crops=[{x:.47,y:.2,zoom:1},{x:.5,y:.67,zoom:1},{x:.5,y:.48,zoom:1},{x:.5,y:.68,zoom:1},{x:.5,y:.47,zoom:1},{x:.5,y:.5,zoom:1}];
+    state.names=['Boulevard portrait','City in motion','Miami skyline','After-hours street','Sunset palms','Palm-lined night street'];
+    state.assignments=[0,1,2,3,4,5];
+    // Hand-tuned focal points preserve the model portrait's face and each street's leading lines.
+    state.crops=[{x:.47,y:.2,zoom:1},{x:.5,y:.67,zoom:1},{x:.5,y:.48,zoom:1},{x:.5,y:.68,zoom:1},{x:.5,y:.47,zoom:1},{x:.56,y:.43,zoom:1}];
     state.selected=0;refreshPhotos();repaint();
-    $('status').textContent='FIVE LOCAL PHOTOS + ORIGINAL ILLUSTRATION · READY';
+    $('status').textContent='SIX LOCAL PHOTOS · SIX DISTINCT FRAMES · READY';
   } catch {$('status').textContent='Could not load local samples';}
 }
 function syncPanel() {
@@ -72,6 +74,9 @@ function syncPanel() {
   [...$('photoList').children].forEach((chip,i)=>chip.classList.toggle('selected',state.assignments[state.selected]===i));
   const crop=state.crops[state.selected];
   $('zoom').value=crop.zoom; $('panX').value=crop.x; $('panY').value=crop.y;
+  $('treatment').value=state.treatments[state.selected];
+  $('gradeStrength').value=state.gradeStrength;
+  $('sourceCount').textContent=`${state.images.length} LOCAL SOURCE${state.images.length===1?'':'S'}`;
 }
 function setFormat(name) {
   state.format=name; [canvas.width,canvas.height]=sizes[name];
@@ -102,6 +107,43 @@ for(const type of ['dragleave','drop']) drop.addEventListener(type,e=>{e.prevent
 drop.addEventListener('drop',e=>addPhotos(e.dataTransfer.files));
 $('panelPhoto').addEventListener('change',e=>{state.assignments[state.selected]=Number(e.target.value);syncPanel();repaint();});
 $('resetCrop').addEventListener('click',()=>{state.crops[state.selected]={x:.5,y:.5,zoom:1};syncPanel();repaint();});
+$('treatment').addEventListener('change',e=>{
+  state.treatments[state.selected]=e.target.value;
+  $('status').textContent=`FRAME ${state.selected+1} · ${e.target.value.toUpperCase()} PRINT`;
+  repaint();
+});
+$('gradeStrength').addEventListener('input',e=>{
+  state.gradeStrength=Number(e.target.value);
+  $('gradeValue').textContent=`${Math.round(state.gradeStrength*100)}%`;
+  repaint();
+});
+function sequencePhotos(offset=0) {
+  if(!state.images.length) {
+    $('status').textContent='ADD A PHOTO OR LOAD THE SAMPLE STORY FIRST';
+    return;
+  }
+  // A storyboard is six independent edits: sequencing never overwrites crops or grades.
+  state.assignments=state.assignments.map((_,i)=>(i+offset+state.images.length)%state.images.length);
+  refreshPhotos();repaint();
+  $('status').textContent=`SIX FRAMES SEQUENCED · ${state.images.length} SOURCE${state.images.length===1?'':'S'}`;
+}
+$('sequence').addEventListener('click',()=>sequencePhotos());
+$('rotate').addEventListener('click',()=>{
+  if(!state.images.length) {sequencePhotos();return;}
+  const next=state.assignments.map((value,i)=>{
+    const current=value<0?i%state.images.length:value;
+    return (current+1)%state.images.length;
+  });
+  state.assignments=next;refreshPhotos();repaint();
+  $('status').textContent='STORY ADVANCED ONE FRAME';
+});
+document.addEventListener('keydown',e=>{
+  if(!['ArrowLeft','ArrowRight'].includes(e.key) ||
+    ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) return;
+  e.preventDefault();
+  state.selected=(state.selected+(e.key==='ArrowRight'?1:5))%6;
+  syncPanel();repaint();
+});
 for(const [id,key] of [['zoom','zoom'],['panX','x'],['panY','y']]) $(''+id).addEventListener('input',e=>{
   state.crops[state.selected][key]=Number(e.target.value); repaint();
 });
